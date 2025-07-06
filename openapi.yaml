@@ -1,0 +1,261 @@
+openapi: 3.0.3
+info:
+  title: Wallet Service API
+  description: Digital wallet management API with support for deposits, withdrawals, and transfers
+  version: 1.0.0
+  contact:
+    name: Wallet Service Team
+servers:
+  - url: http://localhost:8080
+    description: Local development
+paths:
+  /api/v1/wallets:
+    post:
+      summary: Create new wallet
+      operationId: createWallet
+      tags:
+        - Wallets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletRequest'
+      responses:
+        '201':
+          description: Wallet created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Invalid data
+        '500':
+          description: Internal server error
+
+  /api/v1/wallets/{walletId}:
+    get:
+      summary: Get wallet details
+      operationId: getWallet
+      tags:
+        - Wallets
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet ID
+      responses:
+        '200':
+          description: Wallet details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '404':
+          description: Wallet not found
+        '500':
+          description: Internal server error
+
+  /api/v1/wallets/{walletId}/balance/historical:
+    get:
+      summary: Get historical balance
+      operationId: getHistoricalBalance
+      tags:
+        - Wallets
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet ID
+        - name: timestamp
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Timestamp in ISO 8601 format
+          example: "2024-01-01T00:00:00Z"
+      responses:
+        '200':
+          description: Wallet historical balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Invalid timestamp
+        '404':
+          description: Wallet not found
+        '500':
+          description: Internal server error
+
+  /api/v1/wallets/{walletId}/deposit:
+    post:
+      summary: Deposit money
+      operationId: deposit
+      tags:
+        - Transactions
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmountRequest'
+      responses:
+        '200':
+          description: Deposit completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Invalid amount
+        '404':
+          description: Wallet not found
+        '500':
+          description: Internal server error
+
+  /api/v1/wallets/{walletId}/withdraw:
+    post:
+      summary: Withdraw money
+      operationId: withdraw
+      tags:
+        - Transactions
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmountRequest'
+      responses:
+        '200':
+          description: Withdrawal completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Invalid amount or insufficient balance
+        '404':
+          description: Wallet not found
+        '500':
+          description: Internal server error
+
+  /api/v1/wallets/transfer:
+    post:
+      summary: Transfer money between wallets
+      operationId: transfer
+      tags:
+        - Transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer completed successfully
+        '400':
+          description: Invalid data or insufficient balance
+        '404':
+          description: One of the wallets not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CreateWalletRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          description: User ID
+          example: "user123"
+
+    AmountRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Transaction amount
+          example: 100.50
+
+    TransferRequest:
+      type: object
+      required:
+        - fromWalletId
+        - toWalletId
+        - amount
+      properties:
+        fromWalletId:
+          type: string
+          description: Source wallet ID
+          example: "wallet1"
+        toWalletId:
+          type: string
+          description: Destination wallet ID
+          example: "wallet2"
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Transfer amount
+          example: 50.00
+
+    WalletResponse:
+      type: object
+      properties:
+        walletId:
+          type: string
+          description: Wallet ID
+          example: "e5cf2bd3-d25d-4d67-b053-3649bd71df1d"
+        userId:
+          type: string
+          description: User ID
+          example: "user123"
+        balance:
+          type: number
+          format: decimal
+          description: Current wallet balance
+          example: 150.75
+        createdAt:
+          type: string
+          format: date-time
+          description: Wallet creation date
+          example: "2024-01-01T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update date
+          example: "2024-01-01T15:30:00Z"
+
+tags:
+  - name: Wallets
+    description: Wallet related operations
+  - name: Transactions
+    description: Financial transaction operations
