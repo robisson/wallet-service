@@ -1,0 +1,43 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wallet-service
+
+aws:
+  region: us-east-1
+  dynamodb:
+    endpoint: ${DYNAMODB_ENDPOINT:}
+
+audit:
+  snapshot:
+    enabled: ${AUDIT_SNAPSHOT_ENABLED:true}
+    batch-size: ${AUDIT_SNAPSHOT_BATCH_SIZE:100}
+    cron: ${AUDIT_SNAPSHOT_CRON:0 0 0 * * ?}
+  integrity:
+    cron: ${AUDIT_INTEGRITY_CRON:0 0 1 * * ?}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        histogram-flavor: prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        wallet_deposit_duration_seconds: true
+        wallet_withdrawal_duration_seconds: true
+        wallet_transfer_duration_seconds: true
+        wallet_database_duration_seconds: true
+
