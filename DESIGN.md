@@ -102,6 +102,9 @@ Best choice for Java, enabling fast, high-quality delivery aligned with industry
 **Fit for this project:**
 Solid choice for consistency and scalability, but requires attention to modeling, cost management, and AWS dependency.
 
+**Special Note about Amazon DynamoDB**
+
+
 #### Kubernetes for infrastructure
 
 **Pros:**
@@ -266,36 +269,3 @@ As it is a more complex analysis, I will not go into detail here, but I will lis
 When we take this priority to an application that uses some DR plan in a multi-region scenario, we will have the following decisions:
 - Will we replicate the data from one region to another synchronously or asynchronously, that is, using eventual consistency or strong consistency? This has a big implication and should be guided by the defined business objectives and RTO/RPO.
 - What is the impact of this architecture on the P99 latency of transactions?
-
-## Security Considerations
-
-### Current Implementation
-- Input validation with Bean Validation
-- Global exception handling
-- No sensitive data in logs
-
-## Performance Considerations
-
-### Current Performance
-- Single-digit millisecond DynamoDB operations
-- O(1) wallet lookups
-- O(n) historical balance calculation
-
-### Optimization Opportunities
-- **Caching**: Redis for frequently accessed wallets
-- **Read Replicas**: DynamoDB Global Tables for multi-region
-- **Batch Operations**: For bulk transfers
-- **Materialized Views**: Pre-calculated balances at intervals
-
-## Monitoring and Observability
-
-### Health Checks
-- Application health endpoint
-- DynamoDB connectivity check
-- Custom business metrics
-
-### Metrics to Add
-- Transaction volume and latency
-- Error rates by operation type
-- Wallet creation rate
-- Balance distribution
