@@ -35,7 +35,7 @@ Given the business needs of the service, I chose the following stack, in additio
 
 ### Architecture Choices: Pros & Cons
 
-Below is a critical analysis of each architectural choice, considering the requirements and the solution implemented:
+Below is an analysis of each architectural choice, considering the requirements and the solution implemented:
 
 #### Hexagonal Architecture (Ports & Adapters)
 
@@ -85,25 +85,26 @@ Appropriate, as the wallet and transaction domain is critical and benefits from 
 **Fit for this project:**
 Best choice for Java, enabling fast, high-quality delivery aligned with industry standards, but with some resource overhead.
 
-#### DynamoDB
+#### Amazon DynamoDB
+
+Amazon DynamoDB its a NoSQL serverless database, highly scalable with an SLA of 99.99% single region and 99.999% for multi-region application using Global Tables.
 
 **Pros:**
 - Highly scalable, managed, and supports ACID transactions (essential for money).
 - Low latency for reads/writes; good fit for write-intensive workloads.
 - Native support for auditability and versioning.
+- latency in single digit milliseconds for P99
+- No operational overhead in terms of infrastructure, its serverless
 
 **Cons:**
 - Data modeling is different from relational DBs and requires careful design around access patterns.
 - Complex queries (e.g., joins, aggregations) are harder or more expensive.
-- Costs can grow quickly with inefficient access patterns or high volume.
-- Vendor lock-in: strongly tied to AWS ecosystem.
-- Local development and testing can be more challenging than with traditional databases.
 
 **Fit for this project:**
-Solid choice for consistency and scalability, but requires attention to modeling, cost management, and AWS dependency.
+Solid choice for consistency and scalability, while supporting transaction and ACID use case.
 
-**Special Note about Amazon DynamoDB**
-
+#### Special Note about Amazon DynamoDB
+**Is it Amazon DynamoDB a Single Point of Failure for this service?** yes and no. Amazon DynamoDB its architected for multiples AZs with high availability and durability and a great track records in terms of resilience in the last 10 years.
 
 #### Kubernetes for infrastructure
 
@@ -121,7 +122,55 @@ Solid choice for consistency and scalability, but requires attention to modeling
 **Fit for this project:**
 Modern and production-ready, demonstrating readiness for real-world environments, but may be more than needed for a simple assignment or small team.
 
-## 3. API & Functionalities
+## 3. Scale limits
+As you will see below, with the use of Kubernetes and the concept of cell-based architecture, we can scale the compute layer to large numbers, in the millions per second range, I would say.
+
+A bottleneck in this LAB model would be Amazon DynamoDB, but not AmazonDB itself, but the selected data model. Since DynamoDB has hard limits (limits that cannot be changed) of 1k RPS per partition key for writing and 3k RPS for reading per partition key.
+
+Since this service has not established a minimum TPS requirement, the data model I selected for this service was the following:
+
+For wallets:
+```json
+{
+  "walletId": "6a836b5a-367e-4abc-8347-a2aaf56afd1c", // PartitionKey
+  "createdAt": "2025-07-06T14:46:53.316283400Z",
+  "balance": 5085,
+  "userId": "test_1751813213_5_8469",
+  "updatedAt": "2025-07-06T14:48:48.038240300Z"
+}
+```
+
+For transactions:
+```json
+{
+  "walletId": "6a836b5a-367e-4abc-8347-a2aaf56afd1c", // PartitionKey
+  "amount": 110,
+  "auditTimestamp": "2025-07-06T14:47:27.950566Z",
+  "requestId": "deposit-6a836b5a-367e-4abc-8347-a2aaf56afd1c-1751813247950",
+  "type": "DEPOSIT",
+  "transactionId": "00c6f667-924b-49d4-8bcf-fde9e656c74f",
+  "transactionHash": "12fb7453",
+  "timestamp": "2025-07-06T14:47:27.950587100Z"
+}
+```
+In case of transaction I could create the PK as transactionID, but just for easier access patterns or transactions for customers that I created as walletId, being the same of the wallet.
+
+With this data model, the deposit, withdrawal and money transfer APIs could do up to **1k TPS per wallet**, which is a very aggressive TPS if we analyze it. For the application as a whole, we have virtually no limits. Of course, we have to consider latency.
+
+For all transactional endpoints, there are always 3 operations involved: retrieving the current balance, calculating it, and then saving the new balance and the transaction.
+
+### Current Scale limits
+| Limit | Description | 
+|-------|-------------|
+| 1000 TPS | This value its by wallet |
+
+### How can this limits be increased?
+There are two ways to increase these limits, which are not exhaustive:
+
+1. If a single wallet needs to perform more than 1k TPS, we can provide a batch API to the client to group transactions. This way, each client can, for example, group transactions from the same wallet into batches of, say, 50 transactions. We could do the same in Amazon DynamoDB, which would significantly increase the number of transactions per wallet.
+2. We can change the data model of the entities in the database to ensure that the DynamoDB partitionKey is not the wallet with a low cardinality, such as by placing the transactionID as the partitionKey in the first phase of service processing. This could scale to much higher levels.
+
+## 4. API & Functionalities
 The entire API contract is specified in an [openapi.yaml](openapi.yaml) document, but below is a summary of the exposed APIs.
 
 ### Access Patterns
@@ -135,18 +184,19 @@ Starting with the APIs is a way to stay client-centered (API consumer) and deriv
 3. Get transactions for wallet: Query transactions table by walletId
 4. Get historical transactions: Query with filter on timestamp
 
-### APIS
+### Key API Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/wallets` | Create a new wallet |
+| GET | `/api/v1/wallets/{id}` | Get wallet details |
+| POST | `/api/v1/wallets/{id}/deposit` | Deposit money |
+| POST | `/api/v1/wallets/{id}/withdraw` | Withdraw money |
+| POST | `/api/v1/wallets/transfer` | Transfer between wallets |
+| GET | `/api/v1/wallets/{id}/balance/historical` | Get historical balance |
 
-- **Create Wallet:** `POST /api/v1/wallets` — One wallet per user, validated at creation.
-- **Get Wallet:** `GET /api/v1/wallets/{id}` — Returns wallet details.
-- **Deposit:** `POST /api/v1/wallets/{id}/deposit` — Atomic update, audit log, and snapshot.
-- **Withdraw:** `POST /api/v1/wallets/{id}/withdraw` — Validates funds, atomic update, audit log, and snapshot.
-- **Transfer:** `POST /api/v1/wallets/transfer` — Atomic operation across two wallets, audit log, and snapshot.
-- **Historical Balance:** `GET /api/v1/wallets/{id}/balance/historical?timestamp=...` — Replays transactions up to a point in time.
 
 
-
-## 4. Audit & Compliance
+## 5. Audit & Compliance
 In addition to the transactional context of moving the balance in an account or between accounts, a fundamental requirement is to have traceability of the balance and to know the position of the balance before and after each movement and also to be able to recover it in case of disasters.
 
 To achieve this, in addition to using transactions in the context of DynamoDB, to ensure that every time a transaction is saved, the balance is also changed and vice versa, I inserted two mechanisms, one for auditing and one for balance snapshots. Below is a brief explanation of them.
@@ -159,7 +209,7 @@ To achieve this, in addition to using transactions in the context of DynamoDB, t
 ### Real case for production
 Since this is a simpler implementation, I did everything in the same microservice, but a more robust alternative would be to have a ledger service, where all transactions would be saved immutably and verifiably, to ensure that everything that enters the service is recorded even before being processed. If the service suffers any downtime, it can rely on this service to reconcile balance and transactions.
 
-## 5. Monitoring & Observability
+## 6. Monitoring & Observability
 
 I included a set of business-relevant metrics, using micrometer and Spring Boot to expose an endpoint that understands the Prometheus scrape format. In addition, the system features a set of structured logs classified by level and flexible to configuration.
 
@@ -210,10 +260,19 @@ Since this service is a distributed system with dependencies of the same kind, t
 ![Indepotency](docs/images/indepotency.png)
 
 
+## Add a layer of admission control or rate limit for a fair use of the service
+The entire system may eventually become overloaded or have a client that will demand much more from the system than others. Therefore, it is essential to define TPS and latency limits for the service at P50, P90 and P99 and then implement rate limit mechanisms for the system as a whole and also per client, in our case here per wallet.
+
+In this way, we can specify that our service can, for example, process 10k TPS globally and 1k TPS per wallet.
+
+The entire system may eventually become overloaded or have a client that will demand much more from the system than others. Therefore, it is essential to define TPS and latency limits for the service at P50, P90 and P99 and then implement rate limit mechanisms for the system as a whole and also per client, in our case here per wallet.
+
+This way, we can specify that our service can, for example, process 10k TPS globally and 1k TPS per wallet.
+
+When implementing our service, it would be interesting to have several layers of admission control/rate limit. Since EKS was also suggested as infrastructure, our service will run on Kubernetes PODs. Therefore, it is necessary to perform load tests to identify how many TPS each POD on an X type of instance with X amount of memory can process, and beyond this limit, we have to cut traffic in order to ensure a healthy limit for clients.
+
 ## Add more synthetic, integration and load tests 
 In this project I only included unit tests, but it would make sense to have end-to-end test scenarios with integration tests, synthetic tests, and load tests that help validate an SLA, TPS, latency, etc., simulating the actual customer journey.
-
-<br/>
 
 ## Add Kubernetes as the Infrastructure for deployments
 It was not mentioned in which environment the system should be hosted, but using containers and Kubernetes is a very coherent choice. It allows more portability, operation of scalable services with low operational cost. The image below shows how the architecture of this service could be done using Kubernetes on Amazon EKS.

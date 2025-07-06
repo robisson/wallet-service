@@ -42,7 +42,7 @@ curl http://localhost:8080/actuator/health
 
 ## 🔒 Audit and Compliance
 
-The service implements a robust audit system to meet regulatory requirements:
+The service implements a robust audit system to meet regulatory requirements in transactional financial services:
 
 ### Immutable Audit Logs
 - **Complete Audit Trail**: Each transaction is recorded with details of who/when/where
@@ -65,7 +65,6 @@ The following environment variables control the audit system behavior:
 
 The service provides a complete OpenAPI specification available at:
 - **OpenAPI Spec**: [openapi.yaml](./openapi.yaml)
-- **Interactive Docs**: http://localhost:8080/swagger-ui.html (when running)
 
 ### Key Endpoints
 | Method | Endpoint | Description |
