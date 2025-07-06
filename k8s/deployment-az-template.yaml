@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wallet-service-${AZ}
+  labels:
+    app: wallet-service
+    zone: ${AZ}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wallet-service
+      zone: ${AZ}
+  template:
+    metadata:
+      labels:
+        app: wallet-service
+        zone: ${AZ}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - ${AZ}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: wallet-service
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: wallet-service
+        image: wallet-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: AVAILABILITY_ZONE
+          value: "${AZ}"
+        - name: DYNAMODB_ENDPOINT
+          value: ""
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
