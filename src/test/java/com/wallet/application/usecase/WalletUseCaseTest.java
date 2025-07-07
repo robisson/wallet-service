@@ -10,7 +10,7 @@ import com.wallet.domain.model.WalletId;
 import com.wallet.domain.repositories.TransactionRepository;
 import com.wallet.domain.repositories.WalletRepository;
 import com.wallet.domain.service.AuditService;
-import com.wallet.domain.service.WalletDomainService;
+import com.wallet.domain.service.WalletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +35,7 @@ class WalletUseCaseTest {
     private TransactionRepository transactionRepository;
     
     @Mock
-    private WalletDomainService walletDomainService;
+    private WalletService walletDomainService;
     
     @Mock
     private AuditService auditService;

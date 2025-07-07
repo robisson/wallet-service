@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 public record TransactionRequest(
     @NotBlank(message = "Wallet ID is required and cannot be blank") 
     String walletId,
+    
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be at least 0.01") 
     BigDecimal amount

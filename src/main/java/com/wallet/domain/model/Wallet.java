@@ -87,6 +87,7 @@ public class Wallet {
         if (amount.amount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Deposit amount must be positive");
         }
+
         this.balance = this.balance.add(amount);
         this.updatedAt = Instant.now();
     }
@@ -105,9 +106,11 @@ public class Wallet {
         if (amount.amount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Withdrawal amount must be positive");
         }
+
         if (!this.balance.isGreaterThanOrEqual(amount)) {
             throw new IllegalArgumentException("Insufficient funds");
         }
+        
         this.balance = this.balance.subtract(amount);
         this.updatedAt = Instant.now();
     }

@@ -41,19 +41,24 @@ public class WalletEntity {
     
     @DynamoDbPartitionKey
     public String getWalletId() { return walletId; }
+    
     public void setWalletId(String walletId) { this.walletId = walletId; }
     
     @DynamoDbSecondaryPartitionKey(indexNames = "UserIdIndex")
     public String getUserId() { return userId; }
+
     public void setUserId(String userId) { this.userId = userId; }
     
     public BigDecimal getBalance() { return balance; }
+
     public void setBalance(BigDecimal balance) { this.balance = balance; }
     
     public Instant getCreatedAt() { return createdAt; }
+
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     
     public Instant getUpdatedAt() { return updatedAt; }
+
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     
     /**
@@ -71,6 +76,7 @@ public class WalletEntity {
         map.put("balance", AttributeValue.builder().n(balance.toString()).build());
         map.put("createdAt", AttributeValue.builder().s(createdAt.toString()).build());
         map.put("updatedAt", AttributeValue.builder().s(updatedAt.toString()).build());
+
         return map;
     }
     
@@ -82,11 +88,13 @@ public class WalletEntity {
      */
     public static WalletEntity fromDomain(Wallet wallet) {
         WalletEntity entity = new WalletEntity();
+
         entity.setWalletId(wallet.getId().value());
         entity.setUserId(wallet.getUserId());
         entity.setBalance(wallet.getBalance().amount());
         entity.setCreatedAt(wallet.getCreatedAt());
         entity.setUpdatedAt(wallet.getUpdatedAt());
+
         return entity;
     }
     

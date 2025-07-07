@@ -5,7 +5,7 @@ import com.wallet.domain.model.*;
 import com.wallet.domain.repositories.TransactionRepository;
 import com.wallet.domain.repositories.WalletRepository;
 import com.wallet.domain.service.AuditService;
-import com.wallet.domain.service.WalletDomainService;
+import com.wallet.domain.service.WalletService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class WalletUseCase {
     private static final Logger logger = LoggerFactory.getLogger(WalletUseCase.class);
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
-    private final WalletDomainService walletDomainService;
+    private final WalletService walletDomainService;
     private final AuditService auditService;
     
     /**
@@ -52,7 +52,7 @@ public class WalletUseCase {
      */
     public WalletUseCase(WalletRepository walletRepository, 
                         TransactionRepository transactionRepository,
-                        WalletDomainService walletDomainService,
+                        WalletService walletDomainService,
                         AuditService auditService) {
         this.walletRepository = walletRepository;
         this.transactionRepository = transactionRepository;
@@ -291,6 +291,7 @@ public class WalletUseCase {
         
         try {
             walletDomainService.transfer(fromWalletId, toWalletId, amount);
+            
             logger.info("Transfer completed successfully from wallet: {} to wallet: {} amount: {}", 
                        request.fromWalletId(), request.toWalletId(), request.amount());
         } catch (Exception e) {

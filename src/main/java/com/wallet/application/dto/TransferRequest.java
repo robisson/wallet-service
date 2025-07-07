@@ -31,8 +31,10 @@ import java.math.BigDecimal;
 public record TransferRequest(
     @NotBlank(message = "Source wallet ID is required and cannot be blank") 
     String fromWalletId,
+
     @NotBlank(message = "Destination wallet ID is required and cannot be blank") 
     String toWalletId,
+    
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be at least 0.01") 
     BigDecimal amount
