@@ -94,17 +94,26 @@ api_call "GET" "$BASE_URL/$wallet2_id" "" "Get wallet 2 balance"
 echo -e "\n${CYAN}Step 6: Transferring $150 from wallet 1 to wallet 2${NC}"
 api_call "POST" "$BASE_URL/transfer" "{\"fromWalletId\": \"$wallet1_id\", \"toWalletId\": \"$wallet2_id\", \"amount\": 150.00}" "Transfer $150"
 
-# Step 7: Check final balances
+
+# Step 7: Checking final balances
 echo -e "\n${CYAN}Step 7: Checking final balances${NC}"
 api_call "GET" "$BASE_URL/$wallet1_id" "" "Get wallet 1 final balance"
 api_call "GET" "$BASE_URL/$wallet2_id" "" "Get wallet 2 final balance"
 
-# Step 8: Test withdrawal
-echo -e "\n${CYAN}Step 8: Withdrawing $100 from wallet 2${NC}"
+# Step 8: Test historical balance endpoint for both wallets
+echo -e "\n${CYAN}Step 8: Checking historical balance for both wallets${NC}"
+sample_timestamp="2024-01-01T12:00:00Z"
+api_call "GET" "$BASE_URL/$wallet1_id/balance/historical?timestamp=$sample_timestamp" "" "Get historical balance for wallet 1 at $sample_timestamp"
+api_call "GET" "$BASE_URL/$wallet2_id/balance/historical?timestamp=$sample_timestamp" "" "Get historical balance for wallet 2 at $sample_timestamp"
+
+
+# Step 9: Test withdrawal
+echo -e "\n${CYAN}Step 9: Withdrawing $100 from wallet 2${NC}"
 api_call "POST" "$BASE_URL/$wallet2_id/withdraw" '{"amount": 100.00}' "Withdraw $100 from wallet 2"
 
-# Step 9: Final balance check
-echo -e "\n${CYAN}Step 9: Final balance check${NC}"
+
+# Step 10: Final balance check
+echo -e "\n${CYAN}Step 10: Final balance check${NC}"
 api_call "GET" "$BASE_URL/$wallet1_id" "" "Get wallet 1 final balance"
 api_call "GET" "$BASE_URL/$wallet2_id" "" "Get wallet 2 final balance"
 
@@ -113,5 +122,6 @@ echo -e "${CYAN}Summary:${NC}"
 echo -e "• Created 2 wallets"
 echo -e "• Deposited $500 to wallet 1, $300 to wallet 2"
 echo -e "• Transferred $150 from wallet 1 to wallet 2"
+echo -e "• Checked historical balance endpoint for both wallets"
 echo -e "• Withdrew $100 from wallet 2"
 echo -e "• Expected final balances: Wallet 1: $350, Wallet 2: $350"
