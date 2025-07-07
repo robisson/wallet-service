@@ -75,6 +75,7 @@ public class WalletController {
      */
     private AuditInfo getAuditInfo(HttpServletRequest httpRequest) {
         AuditInfo auditInfo = (AuditInfo) httpRequest.getAttribute(LoggingInterceptor.AUDIT_INFO_ATTRIBUTE);
+
         if (auditInfo != null) {
             return AuditInfo.builder()
                 .userId(MDC.get("userId"))
@@ -85,6 +86,7 @@ public class WalletController {
                 .additionalContext(auditInfo.getAdditionalContext())
                 .build();
         }
+
         return null;
     }
     
@@ -104,9 +106,11 @@ public class WalletController {
         
         try {
             WalletResponse response = walletUseCase.createWallet(request);
+
             MDC.put("walletId", response.walletId());
             logger.info("Wallet created successfully: {}", response.walletId());
             walletMetrics.incrementWalletCreated();
+
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             logger.error("Failed to create wallet for user: {}", request.userId(), e);
@@ -205,11 +209,14 @@ public class WalletController {
             logger.info("Deposit completed successfully for wallet: {} amount: {}", walletId, request.amount());
             walletMetrics.incrementDeposit();
             walletMetrics.recordDepositDuration(sample);
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Deposit failed for wallet: {} amount: {}", walletId, request.amount(), e);
+
             walletMetrics.incrementBusinessError("deposit_failed");
             walletMetrics.recordDepositDuration(sample);
+
             throw e;
         } finally {
             MDC.clear();
@@ -233,6 +240,7 @@ public class WalletController {
                                                   @Valid @RequestBody AmountRequest request,
                                                   HttpServletRequest httpRequest) {
         Timer.Sample sample = walletMetrics.startWithdrawalTimer();
+
         MDC.put("walletId", walletId);
         MDC.put("amount", request.amount().toString());
         MDC.put("operation", "withdraw");
@@ -251,11 +259,13 @@ public class WalletController {
             logger.info("Withdrawal completed successfully for wallet: {} amount: {}", walletId, request.amount());
             walletMetrics.incrementWithdrawal();
             walletMetrics.recordWithdrawalDuration(sample);
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Withdrawal failed for wallet: {} amount: {}", walletId, request.amount(), e);
             walletMetrics.incrementBusinessError("withdrawal_failed");
             walletMetrics.recordWithdrawalDuration(sample);
+
             throw e;
         } finally {
             MDC.clear();
@@ -277,28 +287,32 @@ public class WalletController {
     public ResponseEntity<Void> transfer(@Valid @RequestBody TransferRequest request,
                                         HttpServletRequest httpRequest) {
         Timer.Sample sample = walletMetrics.startTransferTimer();
+
         MDC.put("fromWalletId", request.fromWalletId());
         MDC.put("toWalletId", request.toWalletId());
         MDC.put("amount", request.amount().toString());
         MDC.put("operation", "transfer");
+
         logger.info("Processing transfer from wallet: {} to wallet: {} amount: {}", 
                    request.fromWalletId(), request.toWalletId(), request.amount());
         
         try {
-            AuditInfo auditInfo = getAuditInfo(httpRequest);
-            
             walletUseCase.transfer(request);
             
             logger.info("Transfer completed successfully from wallet: {} to wallet: {} amount: {}", 
                        request.fromWalletId(), request.toWalletId(), request.amount());
+
             walletMetrics.incrementTransfer();
             walletMetrics.recordTransferDuration(sample);
+
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             logger.error("Transfer failed from wallet: {} to wallet: {} amount: {}", 
                         request.fromWalletId(), request.toWalletId(), request.amount(), e);
+
             walletMetrics.incrementBusinessError("transfer_failed");
             walletMetrics.recordTransferDuration(sample);
+
             throw e;
         } finally {
             MDC.clear();

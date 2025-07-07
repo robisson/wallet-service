@@ -32,11 +32,11 @@ class WalletDomainServiceTest {
     @Mock
     private AuditService auditService;
     
-    private WalletDomainService walletDomainService;
+    private WalletService walletDomainService;
     
     @BeforeEach
     void setUp() {
-        walletDomainService = new WalletDomainService(walletRepository, transactionRepository, auditService);
+        walletDomainService = new WalletService(walletRepository, transactionRepository, auditService);
     }
     
     @Test
@@ -44,20 +44,20 @@ class WalletDomainServiceTest {
         WalletId fromWalletId = WalletId.generate();
         WalletId toWalletId = WalletId.generate();
         Money amount = Money.of(BigDecimal.valueOf(50.00));
-        
+
         Wallet fromWallet = new Wallet(fromWalletId, "user1");
         fromWallet.deposit(Money.of(BigDecimal.valueOf(100.00)));
         Wallet toWallet = new Wallet(toWalletId, "user2");
-        
+
         when(walletRepository.findById(fromWalletId)).thenReturn(Optional.of(fromWallet));
         when(walletRepository.findById(toWalletId)).thenReturn(Optional.of(toWallet));
-        
+
         walletDomainService.transfer(fromWalletId, toWalletId, amount);
-        
+
         assertEquals(Money.of(BigDecimal.valueOf(50.00)), fromWallet.getBalance());
         assertEquals(Money.of(BigDecimal.valueOf(50.00)), toWallet.getBalance());
-        verify(walletRepository).saveWithTransaction(fromWallet, toWallet);
-        verify(transactionRepository).saveAll(anyList());
+        verify(walletRepository).saveWithTransaction(eq(fromWallet), eq(toWallet), any(Transaction.class), any(Transaction.class));
+        // Não é mais necessário verificar transactionRepository.saveAll
     }
     
     @Test

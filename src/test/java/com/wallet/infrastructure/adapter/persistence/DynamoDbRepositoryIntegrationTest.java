@@ -144,11 +144,13 @@ class DynamoDbRepositoryIntegrationTest {
         WalletId toWalletId = WalletId.generate();
         Wallet fromWallet = new Wallet(fromWalletId, "user1");
         Wallet toWallet = new Wallet(toWalletId, "user2");
-        
+        Transaction outTransaction = new Transaction(fromWalletId, Transaction.Type.TRANSFER_OUT, Money.of(BigDecimal.valueOf(10.00)), toWalletId);
+        Transaction inTransaction = new Transaction(toWalletId, Transaction.Type.TRANSFER_IN, Money.of(BigDecimal.valueOf(10.00)), fromWalletId);
+
         // Test that saveWithTransaction method can be called
         assertDoesNotThrow(() -> {
             try {
-                walletRepository.saveWithTransaction(fromWallet, toWallet);
+                walletRepository.saveWithTransaction(fromWallet, toWallet, outTransaction, inTransaction);
             } catch (Exception e) {
                 // Expected due to mock limitations
             }

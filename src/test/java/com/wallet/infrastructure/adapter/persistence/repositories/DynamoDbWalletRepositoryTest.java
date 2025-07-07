@@ -148,11 +148,13 @@ class DynamoDbWalletRepositoryTest {
     void shouldSaveWithTransaction() {
         Wallet fromWallet = new Wallet(WalletId.generate(), "user1");
         Wallet toWallet = new Wallet(WalletId.generate(), "user2");
-        
+        Transaction outTransaction = new Transaction(fromWallet.getId(), Transaction.Type.TRANSFER_OUT, Money.of(BigDecimal.valueOf(10.00)), toWallet.getId());
+        Transaction inTransaction = new Transaction(toWallet.getId(), Transaction.Type.TRANSFER_IN, Money.of(BigDecimal.valueOf(10.00)), fromWallet.getId());
+
         when(dynamoDbClient.transactWriteItems(any(TransactWriteItemsRequest.class)))
             .thenReturn(TransactWriteItemsResponse.builder().build());
-        
-        assertDoesNotThrow(() -> repository.saveWithTransaction(fromWallet, toWallet));
+
+        assertDoesNotThrow(() -> repository.saveWithTransaction(fromWallet, toWallet, outTransaction, inTransaction));
         verify(dynamoDbClient).transactWriteItems(any(TransactWriteItemsRequest.class));
         verify(walletMetrics).recordDatabaseDuration(sample, "transaction");
     }
