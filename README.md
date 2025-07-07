@@ -30,7 +30,7 @@ curl http://localhost:8080/actuator/health
 # Run functional tests
 ./scripts/test-wallet-api.sh
 
-# Run load tests (optional)
+# Run load tests (optional). Params - [wallets] [deposits] [transfers] [withdrawals] [delay]
 ./scripts/load-test-simple.sh 10 50 25 25 0.1
 ```
 
@@ -192,12 +192,12 @@ The project maintains **>80% test coverage** with comprehensive unit and integra
 # Unit tests
 mvn test
 
-# Integration tests
-mvn verify
-
 # Test coverage report
 mvn jacoco:report
 # View: target/site/jacoco/index.html
+
+# tests with code coverage target verification
+mvn verify
 ```
 
 ### Test Scripts
